@@ -1,15 +1,17 @@
 namespace TaskTracker.Models;
 
-public class Project(string name, string description, Employee projectLead, Employee projectManager)
+public class Project
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
-    public string Name { get; set; } = name;
-    public string Description { get; set; } = description;
+    public string Name { get; set; } = default!;
+    public string Description { get; set; } = default!;
 
-    public int ProjectLeadId { get; set; } = projectLead.Id;
-    public Employee ProjectLead { get; set; } = projectLead;
+    public Guid ProjectLeadId { get; set; }
+    public Employee ProjectLead { get; set; } = default!;
 
-    public int ProjectManagerId { get; set; } = projectManager.Id;
-    public Employee ProjectManager { get; set; } = projectManager;
+    public Guid ProjectManagerId { get; set; }
+    public Employee ProjectManager { get; set; } = default!;
+
+    public ICollection<TaskItem> Tasks { get; set; } = new List<TaskItem>();
 }
