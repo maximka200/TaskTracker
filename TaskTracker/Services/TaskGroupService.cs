@@ -21,13 +21,14 @@ public class TaskGroupService(AppDbContext db) : ITaskGroupService
             .ToListAsync();
     }
 
-    public async Task<TaskGroupResponseDto?> GetByIdAsync(Guid id)
+    public async Task<TaskGroupResponseDto> GetByIdAsync(Guid id)
     {
         var group = await db.TaskGroups
             .AsNoTracking()
             .FirstOrDefaultAsync(g => g.Id == id);
 
-        if (group == null) return null;
+        if (group == null)
+            throw new KeyNotFoundException("Task group not found");
 
         return new TaskGroupResponseDto
         {
@@ -38,6 +39,15 @@ public class TaskGroupService(AppDbContext db) : ITaskGroupService
 
     public async Task<TaskGroupResponseDto> CreateAsync(CreateTaskGroupDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new ArgumentException("Group name is required");
+
+        var exists = await db.TaskGroups
+            .AnyAsync(g => g.Name == dto.Name);
+
+        if (exists)
+            throw new InvalidOperationException("Task group with this name already exists");
+
         var group = new TaskGroup
         {
             Id = Guid.NewGuid(),
@@ -54,14 +64,24 @@ public class TaskGroupService(AppDbContext db) : ITaskGroupService
         };
     }
 
-    public async Task<TaskGroupResponseDto?> UpdateAsync(Guid id, UpdateTaskGroupDto dto)
+    public async Task<TaskGroupResponseDto> UpdateAsync(Guid id, UpdateTaskGroupDto dto)
     {
         var existing = await db.TaskGroups.FindAsync(id);
-        if (existing == null) return null;
 
-        if (dto.Name != null)
+        if (existing == null)
+            throw new KeyNotFoundException("Task group not found");
+
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+        {
+            var nameExists = await db.TaskGroups
+                .AnyAsync(g => g.Name == dto.Name && g.Id != id);
+
+            if (nameExists)
+                throw new InvalidOperationException("Task group name already in use");
+
             existing.Name = dto.Name;
-        
+        }
+
         await db.SaveChangesAsync();
 
         return new TaskGroupResponseDto
@@ -71,21 +91,23 @@ public class TaskGroupService(AppDbContext db) : ITaskGroupService
         };
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task DeleteAsync(Guid id)
     {
         var existing = await db.TaskGroups.FindAsync(id);
-        if (existing == null) return false;
 
-        var tasks = await db.Tasks
-            .Where(t => t.TaskGroupId == id)
-            .ToListAsync();
-        
-        if (tasks.Count > 0 || tasks.Any(t => t.Status != TaskStatus.Cancelled))
-            return false;
+        if (existing == null)
+            throw new KeyNotFoundException("Task group not found");
+
+        var hasActiveTasks = await db.Tasks
+            .AnyAsync(t =>
+                t.TaskGroupId == id &&
+                t.Status != TaskStatus.Cancelled);
+
+        if (hasActiveTasks)
+            throw new InvalidOperationException(
+                "Cannot delete group with active tasks");
 
         db.TaskGroups.Remove(existing);
         await db.SaveChangesAsync();
-
-        return true;
     }
 }

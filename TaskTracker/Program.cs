@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TaskTracker.Controllers.Interfaces;
+using TaskTracker.Middleware;
 using TaskTracker.Repository;
 using TaskTracker.Services;
 
@@ -26,9 +27,9 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-app.UseExceptionHandler();
+app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

@@ -24,13 +24,14 @@ public class EmployeeService(AppDbContext context) : IEmployeeService
             .ToListAsync();
     }
 
-    public async Task<EmployeeResponseDto?> GetByIdAsync(Guid id)
+    public async Task<EmployeeResponseDto> GetByIdAsync(Guid id)
     {
         var e = await context.Employees
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id == id);
 
-        if (e == null) return null;
+        if (e == null)
+            throw new KeyNotFoundException("Employee not found");
 
         return new EmployeeResponseDto
         {
@@ -51,7 +52,7 @@ public class EmployeeService(AppDbContext context) : IEmployeeService
             dto.MiddleName,
             dto.UserName,
             dto.Role
-            )  ;
+        );
 
         await context.Employees.AddAsync(employee);
         await context.SaveChangesAsync();
@@ -67,21 +68,17 @@ public class EmployeeService(AppDbContext context) : IEmployeeService
         };
     }
 
-    public async Task<EmployeeResponseDto?> UpdateAsync(Guid id, UpdateEmployeeDto dto)
+    public async Task<EmployeeResponseDto> UpdateAsync(Guid id, UpdateEmployeeDto dto)
     {
         var existing = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
-        if (existing == null) return null;
-        
-        if (dto.FirstName != null)
-            existing.FirstName = dto.FirstName;
-        if (dto.LastName != null) 
-            existing.LastName = dto.LastName;
-        if (dto.LastName != null) 
-            existing.MiddleName = dto.MiddleName;
-        if (dto.LastName != null) 
-            existing.UserName = dto.UserName;
-        if (dto.LastName != null) 
-            existing.Role = dto.Role.Value;
+        if (existing == null)
+            throw new KeyNotFoundException("Employee not found");
+
+        if (dto.FirstName != null) existing.FirstName = dto.FirstName;
+        if (dto.LastName != null) existing.LastName = dto.LastName;
+        if (dto.MiddleName != null) existing.MiddleName = dto.MiddleName;
+        if (dto.UserName != null) existing.UserName = dto.UserName;
+        if (dto.Role != null) existing.Role = dto.Role.Value;
 
         await context.SaveChangesAsync();
 
@@ -96,14 +93,13 @@ public class EmployeeService(AppDbContext context) : IEmployeeService
         };
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task DeleteAsync(Guid id)
     {
         var existing = await context.Employees.FirstOrDefaultAsync(e => e.Id == id);
-        if (existing == null) return false;
+        if (existing == null)
+            throw new KeyNotFoundException("Employee not found");
 
         context.Employees.Remove(existing);
         await context.SaveChangesAsync();
-
-        return true;
     }
 }

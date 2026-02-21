@@ -9,58 +9,31 @@ namespace TaskTracker.Controllers;
 public class EmployeesController(IEmployeeService employeeService) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        var employees = await employeeService.GetAllAsync();
-        return Ok(employees);
-    }
+    public async Task<ActionResult<IEnumerable<EmployeeResponseDto>>> GetAll()
+        => Ok(await employeeService.GetAllAsync());
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
-    {
-        var employee = await employeeService.GetByIdAsync(id);
-        if (employee == null)
-            return NotFound(new ProblemDetails
-            {
-                Title = "Employee not found or id not correct",
-                Status = StatusCodes.Status404NotFound
-            });
-
-        return Ok(employee);
-    }
+    public async Task<ActionResult<EmployeeResponseDto>> GetById(Guid id)
+        => Ok(await employeeService.GetByIdAsync(id));
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateEmployeeDto dto)
+    public async Task<ActionResult<EmployeeResponseDto>> Create(
+        [FromBody] CreateEmployeeDto dto)
     {
         var created = await employeeService.CreateAsync(dto);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateEmployeeDto dto)
-    {
-        var updated = await employeeService.UpdateAsync(id, dto);
-        if (updated == null)
-            return NotFound(new ProblemDetails
-            {
-                Title = "Employee not found or id not correct",
-                Status = StatusCodes.Status404NotFound
-            });
-
-        return Ok(updated);
-    }
+    public async Task<ActionResult<EmployeeResponseDto>> Update(
+        Guid id,
+        [FromBody] UpdateEmployeeDto dto)
+        => Ok(await employeeService.UpdateAsync(id, dto));
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var deleted = await employeeService.DeleteAsync(id);
-        if (!deleted)
-            return NotFound(new ProblemDetails
-            {
-                Title = "Employee not found or id not correct",
-                Status = StatusCodes.Status404NotFound
-            });
-
+        await employeeService.DeleteAsync(id);
         return NoContent();
     }
 }

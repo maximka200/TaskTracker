@@ -8,7 +8,7 @@ using TaskStatus = TaskTracker.Models.TaskStatus;
 namespace TaskTracker.Services;
 
 public class ProjectService(AppDbContext db) : IProjectService
-{ 
+{
     public async Task<IEnumerable<ProjectResponseDto>> GetAllAsync()
     {
         return await db.Projects
@@ -23,14 +23,15 @@ public class ProjectService(AppDbContext db) : IProjectService
             })
             .ToListAsync();
     }
-    
-    public async Task<ProjectResponseDto?> GetByIdAsync(Guid id)
+
+    public async Task<ProjectResponseDto> GetByIdAsync(Guid id)
     {
         var project = await db.Projects
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == id);
 
-        if (project == null) return null;
+        if (project == null)
+            throw new KeyNotFoundException("Project not found");
 
         return new ProjectResponseDto
         {
@@ -41,9 +42,18 @@ public class ProjectService(AppDbContext db) : IProjectService
             ProjectManagerId = project.ProjectManagerId
         };
     }
-    
+
     public async Task<ProjectResponseDto> CreateAsync(CreateProjectDto dto)
     {
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new ArgumentException("Project name is required");
+
+        var exists = await db.Projects
+            .AnyAsync(p => p.Name == dto.Name);
+
+        if (exists)
+            throw new InvalidOperationException("Project with this name already exists");
+
         var project = new Project
         {
             Id = Guid.NewGuid(),
@@ -65,18 +75,23 @@ public class ProjectService(AppDbContext db) : IProjectService
             ProjectManagerId = project.ProjectManagerId
         };
     }
-    
-    public async Task<ProjectResponseDto?> UpdateAsync(Guid id, UpdateProjectDto dto)
+
+    public async Task<ProjectResponseDto> UpdateAsync(Guid id, UpdateProjectDto dto)
     {
         var existingProject = await db.Projects.FindAsync(id);
-        if (existingProject == null) return null;
-        
-        if (dto.Name != null)
+
+        if (existingProject == null)
+            throw new KeyNotFoundException("Project not found");
+
+        if (!string.IsNullOrWhiteSpace(dto.Name))
             existingProject.Name = dto.Name;
+
         if (dto.Description != null)
             existingProject.Description = dto.Description;
+
         if (dto.ProjectLeadId != null)
             existingProject.ProjectLeadId = dto.ProjectLeadId.Value;
+
         if (dto.ProjectManagerId != null)
             existingProject.ProjectManagerId = dto.ProjectManagerId.Value;
 
@@ -91,20 +106,24 @@ public class ProjectService(AppDbContext db) : IProjectService
             ProjectManagerId = existingProject.ProjectManagerId
         };
     }
-    
-    public async Task<bool> DeleteAsync(Guid id)
+
+    public async Task DeleteAsync(Guid id)
     {
-        var existingProject = await db.Projects
-            .Include(p => p.Tasks)
-            .FirstOrDefaultAsync(p => p.Id == id);
+        var existingProject = await db.Projects.FindAsync(id);
 
-        if (existingProject == null) return false;
+        if (existingProject == null)
+            throw new KeyNotFoundException("Project not found");
 
-        if (existingProject.Tasks.Count > 0 || existingProject.Tasks.Any(t => t.Status == TaskStatus.Cancelled))
-            return false;
+        var hasActiveTasks = await db.Tasks
+            .AnyAsync(t =>
+                t.ProjectId == id &&
+                t.Status != TaskStatus.Cancelled);
+
+        if (hasActiveTasks)
+            throw new InvalidOperationException(
+                "Cannot delete project with active tasks");
 
         db.Projects.Remove(existingProject);
         await db.SaveChangesAsync();
-        return true;
     }
 }

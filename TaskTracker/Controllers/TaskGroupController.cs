@@ -9,41 +9,34 @@ namespace TaskTracker.Controllers;
 public class TaskGroupController(ITaskGroupService service) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IEnumerable<TaskGroupResponseDto>>> GetAll()
         => Ok(await service.GetAllAsync());
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> Get(Guid id)
-    {
-        var group = await service.GetByIdAsync(id);
-        return group is null
-            ? NotFound(new ProblemDetails
-            {
-                Title = "Group not found", 
-                Status = 404
-            })
-            : Ok(group);
-    }
+    public async Task<ActionResult<TaskGroupResponseDto>> Get(Guid id)
+        => Ok(await service.GetByIdAsync(id));
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateTaskGroupDto dto)
-        => Ok(await service.CreateAsync(dto));
+    public async Task<ActionResult<TaskGroupResponseDto>> Create(
+        [FromBody] CreateTaskGroupDto dto)
+    {
+        var created = await service.CreateAsync(dto);
+        return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+    }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTaskGroupDto dto)
-        => Ok(await service.UpdateAsync(id, dto));
+    public async Task<ActionResult<TaskGroupResponseDto>> Update(
+        Guid id,
+        [FromBody] UpdateTaskGroupDto dto)
+    {
+        var updated = await service.UpdateAsync(id, dto);
+        return Ok(updated);
+    }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var result = await service.DeleteAsync(id);
-        return result
-            ? Ok()
-            : BadRequest(new ProblemDetails
-            {
-                Title = "Cannot delete group",
-                Detail = "Group contains active tasks",
-                Status = 400
-            });
+        await service.DeleteAsync(id);
+        return NoContent();
     }
 }

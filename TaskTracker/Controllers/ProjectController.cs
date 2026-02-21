@@ -9,38 +9,34 @@ namespace TaskTracker.Controllers;
 public class ProjectController(IProjectService service) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IEnumerable<ProjectResponseDto>>> GetAll()
         => Ok(await service.GetAllAsync());
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> Get(Guid id)
-    {
-        var project = await service.GetByIdAsync(id);
-        return project is null
-            ? NotFound(new ProblemDetails 
-                { Title = "Project not found", Status = 404 })
-            : Ok(project);
-    }
+    public async Task<ActionResult<ProjectResponseDto>> Get(Guid id)
+        => Ok(await service.GetByIdAsync(id));
 
     [HttpPost]
-    public async Task<IActionResult> Create(CreateProjectDto dto)
-        => Ok(await service.CreateAsync(dto));
+    public async Task<ActionResult<ProjectResponseDto>> Create(
+        [FromBody] CreateProjectDto dto)
+    {
+        var created = await service.CreateAsync(dto);
+        return CreatedAtAction(nameof(Get), new { id = created.Id }, created);
+    }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, UpdateProjectDto dto)
-        => Ok(await service.UpdateAsync(id, dto));
+    public async Task<ActionResult<ProjectResponseDto>> Update(
+        Guid id,
+        [FromBody] UpdateProjectDto dto)
+    {
+        var updated = await service.UpdateAsync(id, dto);
+        return Ok(updated);
+    }
 
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var result = await service.DeleteAsync(id);
-        return result
-            ? Ok()
-            : BadRequest(new ProblemDetails
-            {
-                Title = "Cannot delete project",
-                Detail = "Project contains active tasks",
-                Status = 400
-            });
+        await service.DeleteAsync(id);
+        return NoContent();
     }
 }
