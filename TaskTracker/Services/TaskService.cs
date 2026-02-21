@@ -9,6 +9,16 @@ namespace TaskTracker.Services;
 
 public class TaskService(AppDbContext db) : ITaskService
 {
+    private static readonly Dictionary<TaskStatus, TaskStatus[]> ValidTransitions = new()
+    {
+        [TaskStatus.Backlog] = [TaskStatus.Current, TaskStatus.Cancelled],
+        [TaskStatus.Current] = [TaskStatus.Active, TaskStatus.Cancelled],
+        [TaskStatus.Active] = [TaskStatus.OnReview, TaskStatus.Cancelled],
+        [TaskStatus.OnReview] = [TaskStatus.Completed, TaskStatus.Cancelled, TaskStatus.Active],
+        [TaskStatus.Completed] = [],
+        [TaskStatus.Cancelled] = []
+    };
+    
     public async Task<IEnumerable<TaskResponseDto>> GetTasksAsync(
         Guid? userId,
         Guid? groupId,
@@ -201,14 +211,8 @@ public class TaskService(AppDbContext db) : ITaskService
         if (t == null)
             throw new KeyNotFoundException("Task not found");
 
-        var valid = t.Status switch
-        {
-            TaskStatus.Backlog => newStatus == TaskStatus.Current,
-            TaskStatus.Current => newStatus == TaskStatus.OnReview,
-            TaskStatus.OnReview => newStatus == TaskStatus.Completed,
-            TaskStatus.Completed => newStatus == TaskStatus.Cancelled,
-            _ => false
-        };
+        var valid = ValidTransitions.TryGetValue(t.Status, out var allowed)
+                    && allowed.Contains(newStatus);
 
         if (!valid)
             throw new InvalidOperationException(
