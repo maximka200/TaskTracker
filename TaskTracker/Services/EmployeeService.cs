@@ -74,11 +74,16 @@ public class EmployeeService(AppDbContext context) : IEmployeeService
         if (existing == null)
             throw new KeyNotFoundException("Employee not found");
 
-        if (dto.FirstName != null) existing.FirstName = dto.FirstName;
-        if (dto.LastName != null) existing.LastName = dto.LastName;
-        if (dto.MiddleName != null) existing.MiddleName = dto.MiddleName;
-        if (dto.UserName != null) existing.UserName = dto.UserName;
-        if (dto.Role != null) existing.Role = dto.Role.Value;
+        if (dto.FirstName != null)
+            existing.FirstName = dto.FirstName;
+        if (dto.LastName != null) 
+            existing.LastName = dto.LastName;
+        if (dto.MiddleName != null) 
+            existing.MiddleName = dto.MiddleName;
+        if (dto.UserName != null) 
+            existing.UserName = dto.UserName;
+        if (dto.Role != null) 
+            existing.Role = dto.Role.Value;
 
         await context.SaveChangesAsync();
 

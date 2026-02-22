@@ -140,10 +140,22 @@ public class TaskService(AppDbContext db) : ITaskService
             t.Description = dto.Description;
 
         if (dto.ProjectId.HasValue)
+        {
+            var projExisting = await db.Projects.AnyAsync(project => project.Id == dto.ProjectId);
+            if (!projExisting)
+                throw new KeyNotFoundException("Project not found");
+            
             t.ProjectId = dto.ProjectId.Value;
+        }
 
         if (dto.TaskGroupId.HasValue)
+        {
+            var groupExisting = await db.TaskGroups.AnyAsync(group => group.Id == dto.TaskGroupId);
+            if (!groupExisting)
+                throw new KeyNotFoundException("Group not found");
+
             t.TaskGroupId = dto.TaskGroupId.Value;
+        }
 
         if (dto.Priority.HasValue)
             t.Priority = dto.Priority.Value;

@@ -98,10 +98,22 @@ public class ProjectService(AppDbContext db) : IProjectService
             existingProject.Description = dto.Description;
 
         if (dto.ProjectLeadId != null)
+        {
+            var leadExisting = await db.Employees.AnyAsync(empl => empl.Id == dto.ProjectLeadId);
+            if (!leadExisting)
+                throw new KeyNotFoundException("Lead not found");
+            
             existingProject.ProjectLeadId = dto.ProjectLeadId.Value;
+        }
 
         if (dto.ProjectManagerId != null)
+        {
+            var managerExisting = await db.Employees.AnyAsync(empl => empl.Id == dto.ProjectManagerId);
+            if (!managerExisting)
+                throw new KeyNotFoundException("Manager not found");
+            
             existingProject.ProjectManagerId = dto.ProjectManagerId.Value;
+        }
 
         await db.SaveChangesAsync();
 

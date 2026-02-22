@@ -18,6 +18,7 @@ builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<ITaskGroupService, TaskGroupService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
+builder.Services.AddScoped<ITaskHistoryService, TaskHistoryService>();
 
 builder.Services.AddControllers();
 
