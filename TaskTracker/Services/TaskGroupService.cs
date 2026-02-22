@@ -16,7 +16,8 @@ public class TaskGroupService(AppDbContext db) : ITaskGroupService
             .Select(g => new TaskGroupResponseDto
             {
                 Id = g.Id,
-                Name = g.Name
+                Name = g.Name,
+                ProjectId = g.ProjectId
             })
             .ToListAsync();
     }
@@ -43,7 +44,8 @@ public class TaskGroupService(AppDbContext db) : ITaskGroupService
             throw new ArgumentException("Group name is required");
 
         var exists = await db.TaskGroups
-            .AnyAsync(g => g.Name == dto.Name);
+            .AnyAsync(g => g.Name == dto.Name 
+                           || g.ProjectId == dto.ProjectId);
 
         if (exists)
             throw new InvalidOperationException("Task group with this name already exists");
@@ -51,7 +53,8 @@ public class TaskGroupService(AppDbContext db) : ITaskGroupService
         var group = new TaskGroup
         {
             Id = Guid.NewGuid(),
-            Name = dto.Name
+            Name = dto.Name,
+            ProjectId = dto.ProjectId
         };
 
         await db.TaskGroups.AddAsync(group);
@@ -60,17 +63,21 @@ public class TaskGroupService(AppDbContext db) : ITaskGroupService
         return new TaskGroupResponseDto
         {
             Id = group.Id,
-            Name = group.Name
+            Name = group.Name,
+            ProjectId = dto.ProjectId
         };
     }
 
     public async Task<TaskGroupResponseDto> UpdateAsync(Guid id, UpdateTaskGroupDto dto)
     {
         var existing = await db.TaskGroups.FindAsync(id);
-
         if (existing == null)
             throw new KeyNotFoundException("Task group not found");
 
+        var projectExisting = await db.Projects.FindAsync(dto.ProjectId);
+        if (projectExisting == null)
+            throw new KeyNotFoundException("Project not found");
+        
         if (!string.IsNullOrWhiteSpace(dto.Name))
         {
             var nameExists = await db.TaskGroups
@@ -87,7 +94,8 @@ public class TaskGroupService(AppDbContext db) : ITaskGroupService
         return new TaskGroupResponseDto
         {
             Id = existing.Id,
-            Name = existing.Name
+            Name = existing.Name,
+            ProjectId = dto.ProjectId
         };
     }
 
@@ -109,5 +117,18 @@ public class TaskGroupService(AppDbContext db) : ITaskGroupService
 
         db.TaskGroups.Remove(existing);
         await db.SaveChangesAsync();
+    }
+    
+    public async Task<TaskGroup?> GetFullGroupAsync(Guid id)
+    {
+        return await db.TaskGroups
+            .AsNoTracking()
+            .Include(g => g.Tasks) 
+            .ThenInclude(t => t.Executors)
+            .ThenInclude(te => te.Employee)
+            .Include(g => g.Tasks)
+            .ThenInclude(t => t.Observers) 
+            .ThenInclude(to => to.Employee)
+            .FirstOrDefaultAsync(g => g.Id == id);
     }
 }

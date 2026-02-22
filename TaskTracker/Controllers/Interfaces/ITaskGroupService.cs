@@ -1,3 +1,4 @@
+using TaskTracker.Models;
 using TaskTracker.Models.DTOs;
 using TaskTracker.Models.DTOs.TaskGroup;
 
@@ -10,4 +11,5 @@ public interface ITaskGroupService
     Task<TaskGroupResponseDto> CreateAsync(CreateTaskGroupDto dto);
     Task<TaskGroupResponseDto> UpdateAsync(Guid id, UpdateTaskGroupDto dto);
     Task DeleteAsync(Guid id);
+    Task<TaskGroup?> GetFullGroupAsync(Guid id);
 }

@@ -85,6 +85,16 @@ public class TaskService(AppDbContext db) : ITaskService
         if (string.IsNullOrWhiteSpace(dto.Title))
             throw new ArgumentException("Title is required");
 
+        var projectExisting = await db.Projects
+            .AnyAsync(project => project.Id == dto.ProjectId);
+        if (!projectExisting)
+            throw new KeyNotFoundException("Project not found");
+        
+        var groupExisting = await db.Projects
+            .AnyAsync(project => project.Id == dto.ProjectId);
+        if (!groupExisting)
+            throw new KeyNotFoundException("Task group not found");
+
         var task = new TaskItem
         {
             Id = Guid.NewGuid(),
@@ -220,5 +230,17 @@ public class TaskService(AppDbContext db) : ITaskService
 
         t.Status = newStatus;
         await db.SaveChangesAsync();
+    }
+    
+    public async Task<TaskItem?> GetFullTaskAsync(Guid id)
+    {
+        return await db.Tasks
+            .Include(t => t.Project)
+            .Include(t => t.TaskGroup)
+            .Include(t => t.Executors)
+            .ThenInclude(e => e.Employee)
+            .Include(t => t.Observers)
+            .ThenInclude(o => o.Employee)
+            .FirstOrDefaultAsync(t => t.Id == id);
     }
 }

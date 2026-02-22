@@ -1,3 +1,4 @@
+using TaskTracker.Models;
 using TaskTracker.Models.DTOs.Employee;
 using TaskTracker.Models.DTOs.TaskItem;
 using TaskStatus = TaskTracker.Models.TaskStatus;
@@ -13,4 +14,5 @@ public interface ITaskService
     Task AddExecutorAsync(Guid taskId, Guid employeeId);
     Task AddObserverAsync(Guid taskId, Guid employeeId);
     Task ChangeStatusAsync(Guid taskId, TaskStatus newStatus);
+    Task<TaskItem?> GetFullTaskAsync(Guid id);
 }

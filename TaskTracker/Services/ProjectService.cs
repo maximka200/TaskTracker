@@ -48,6 +48,14 @@ public class ProjectService(AppDbContext db) : IProjectService
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new ArgumentException("Project name is required");
 
+        var leadExist = await db.Employees.AsNoTracking().AnyAsync(empl => empl.Id == dto.ProjectLeadId);
+        if (!leadExist)
+            throw new KeyNotFoundException("Project lead not found");
+
+        var managerExist = await db.Employees.AsNoTracking().AnyAsync(empl => empl.Id == dto.ProjectLeadId);
+        if (!managerExist)
+            throw new KeyNotFoundException("Project manger not found");
+        
         var exists = await db.Projects
             .AnyAsync(p => p.Name == dto.Name);
 
