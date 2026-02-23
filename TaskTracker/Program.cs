@@ -3,6 +3,7 @@ using QuestPDF.Infrastructure;
 using TaskTracker.Controllers.Interfaces;
 using TaskTracker.Middleware;
 using TaskTracker.Repository;
+using TaskTracker.Seeder;
 using TaskTracker.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +29,14 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    await db.Database.MigrateAsync();
+    await DbSeeder.SeedAsync(db);
+}
 
 app.UseSwagger();
 app.UseSwaggerUI();
