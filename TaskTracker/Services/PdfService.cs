@@ -53,6 +53,7 @@ public class PdfService : IPdfService
     {
         if (group is null)
             throw new KeyNotFoundException("Group not found");
+        
         var document = Document.Create(container =>
         {
             container.Page(page =>

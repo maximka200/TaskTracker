@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-
-namespace TaskTracker.Middleware;
-
 using System.Net;
 using System.Text.Json;
+
+namespace TaskTracker.Middleware;
 
 public class ExceptionHandlingMiddleware(
     RequestDelegate next,
